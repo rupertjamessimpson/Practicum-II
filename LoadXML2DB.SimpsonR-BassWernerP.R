@@ -2,7 +2,6 @@
 # Author: Rupert Simpson, Paula Bass Werner
 # Date: Summer Full 2023
 
-
 # Load required libraries
 library(RSQLite)
 library(XML)
@@ -138,7 +137,7 @@ for (file in 1:length(xmlFiles)) {
       saletxn.df[t.row, "cID"] <- customers.df[customers.df$name == cust, "cID"]
       saletxn.df[t.row, "pID"] <- products.df[products.df$name == prod, "pID"]
       saletxn.df[t.row, "quantity"] <- as.integer(qty)
-      saletxn.df[t.row, "amount"] <- as.integer(amount)
+      saletxn.df[t.row, "amount"] <- as.double(amount)
       saletxn.df[t.row, "country"] <- country
       saletxn.df[t.row, "date"] <- date
       t.row <- t.row + 1 # Increment t.row when a new genre is added
@@ -173,7 +172,7 @@ create_saletxn_table <- "
     cID INT,
     pID INT,
     quantity INT,
-    amount INT,
+    amount DOUBLE,
     country TEXT,
     date DATE,
     FOREIGN KEY (rID) REFERENCES reps(rID),

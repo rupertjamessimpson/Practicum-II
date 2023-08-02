@@ -1,0 +1,99 @@
+---
+title: "Explore and Mine Data"
+output: html_notebook
+---
+
+
+```{r}
+library(ggplot2)
+library(RMySQL)
+library(RSQLite)
+
+host <- "sql9.freemysqlhosting.net"
+username <- "sql9637087"
+password <- "F5WLHRRTXU"
+dbname <- "sql9637087"
+
+mydbcon <- dbConnect(
+  MySQL(),
+  user = username,
+  password = password,
+  dbname = dbname,
+  host = host
+)
+```
+
+
+```{r}
+total_sold_per_year <- "
+  SELECT year, SUM(total_sold) AS total_sold_per_year
+  FROM product_facts
+  GROUP BY year;
+"
+
+total_sold_per_quarter <- "
+  SELECT quarter, SUM(total_sold) AS total_sold_per_quarter
+  FROM product_facts
+  GROUP BY quarter;
+"
+
+top_five_reps_per_year <- "
+  SELECT year, firstName, lastName, SUM(total_sold) AS total_sales
+  FROM rep_facts
+  GROUP BY year, firstName, lastName
+  ORDER BY year, total_sales DESC
+  LIMIT 5;
+"
+
+top_five_reps_per_quarter <- "
+  SELECT quarter, firstName, lastName, SUM(total_sold) AS total_sales
+  FROM rep_facts
+  GROUP BY quarter, firstName, lastName
+  ORDER BY quarter, total_sales DESC;
+"
+
+top_five_reps_per_year.df <- dbGetQuery(mydbcon, top_five_reps_per_year)
+total_sold_per_year.df <- dbGetQuery(mydbcon, total_sold_per_year)
+total_sold_per_quarter.df <- dbGetQuery(mydbcon, total_sold_per_quarter)
+top_five_reps_per_quarter.df <- dbGetQuery(mydbcon, top_five_reps_per_quarter)
+```
+
+```{r}
+print(top_five_reps_per_quarter.df)
+```
+
+```{r}
+ggplot(top_five_reps_per_quarter.df, aes(x = quarter, y = total_sales, color = paste(firstName, lastName))) +
+  geom_line() +
+  geom_point() +
+  labs(x = "Quarter", y = "Total Sales", title = "Top Sales Reps - Total Sales per 2020 Quarter", color = "Sales Rep") +
+  theme_minimal()
+```
+
+```{r}
+ggplot(top_five_reps_per_year.df, aes(x = year, y = total_sales, color = paste(firstName, lastName))) +
+  geom_line() +
+  geom_point() +
+  labs(x = "Year", y = "Total Sales", title = "Top 5 Sales Reps - Total Sales per Year", color = "Sales Rep") +
+  theme_minimal()
+```
+
+```{r}
+ggplot(total_sold_per_year.df, aes(x = year, y = total_sold_per_year)) +
+  geom_line() +
+  geom_point() +
+  labs(x = "Year", y = "Total Sold", title = "Total Sold per Year") +
+  theme_minimal()
+```
+
+```{r}
+ggplot(total_sold_per_quarter.df, aes(x = quarter, y = total_sold_per_quarter)) +
+  geom_line() +
+  geom_point() +
+  labs(x = "Quarter", y = "Total Sold", title = "Total Sold per Quarter") +
+  theme_minimal()
+```
+
+```{r}
+dbDisconnect(mydbcon)
+```
