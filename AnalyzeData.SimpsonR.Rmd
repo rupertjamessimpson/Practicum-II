@@ -1,19 +1,24 @@
 ---
-title: "Explore and Mine Data"
+title: "Practicum II, Part 2: Explore and Mine Data"
+author: "Rupert Simpson & Paula Basswerner"
+date: "Summer Full 2023"
 output: html_notebook
 ---
 
-
-```{r}
+### Connect to Database
+```{r = datbaseConnection}
+# Load required libraries
 library(ggplot2)
 library(RMySQL)
 library(RSQLite)
 
+# Assign remote database values
 host <- "sql9.freemysqlhosting.net"
 username <- "sql9637087"
 password <- "F5WLHRRTXU"
 dbname <- "sql9637087"
 
+# Connect to MySQL
 mydbcon <- dbConnect(
   MySQL(),
   user = username,
@@ -24,7 +29,10 @@ mydbcon <- dbConnect(
 ```
 
 
-```{r}
+### Analytical Query I
+Top five sales reps with the most sales broken down by year.
+```{r = topRepsQueries}
+# Query selecting the top 5 representatives per year with the most sales 
 top_five_reps_per_year <- "
   SELECT year, firstName, lastName, SUM(total_sold) AS total_sales
   FROM rep_facts
@@ -32,13 +40,49 @@ top_five_reps_per_year <- "
   ORDER BY year, total_sales DESC
   LIMIT 5;
 "
+top_five_reps_per_year.df <- dbGetQuery(mydbcon, top_five_reps_per_year)
 
+# Query selecting the top 5 representatives per quarter for 2020 with the most sales 
 top_five_reps_per_quarter <- "
   SELECT quarter, firstName, lastName, SUM(total_sold) AS total_sales
   FROM rep_facts
   GROUP BY quarter, firstName, lastName
   ORDER BY quarter, total_sales DESC;
 "
+top_five_reps_per_quarter.df <- dbGetQuery(mydbcon, top_five_reps_per_quarter)
+
+```
+
+```{r = dataForReps}
+print(top_five_reps_per_year.df)
+print(top_five_reps_per_quarter.df)
+```
+
+### Visualization for Top Representatives with the most sold per year
+This graphs shows the top 5 representatives with the highest sales for the year of 2020.
+```{r = topRepsYear}
+library(scales)
+
+ggplot(top_five_reps_per_year.df, aes(x = year, y = total_sales, fill = paste(firstName, lastName))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Year", y = "Total Sales", title = "Top 5 Sales Reps - Total Sales per Year", fill = "Sales Rep") +
+  theme_minimal() +
+  scale_y_continuous(labels = comma) 
+```
+
+### Visualization for Top Representatives with the most sold per quarter
+This graphs shows the top 5 representatives with the highest sales for the year of 2020, arranged by quarter
+```{r = topRepsPerQuarter}
+ggplot(top_five_reps_per_quarter.df, aes(x = quarter, y = total_sales, color = paste(firstName, lastName))) +
+  geom_line() +
+  geom_point() +
+  labs(x = "Quarter", y = "Total Sales", title = "Top Sales Reps - Total Sales per 2020 Quarter", color = "Sales Rep") +
+  theme_minimal()
+```
+
+### Analytical Query II
+Total revenue sold per month and per year 
+```{r = totalSoldPerMonthQueries}
 
 total_sold_per_year <- "
   SELECT year, SUM(total_sold) AS total_sold_per_year
@@ -58,36 +102,14 @@ total_sold_per_quarter <- "
   GROUP BY quarter;
 "
 
-top_five_reps_per_year.df <- dbGetQuery(mydbcon, top_five_reps_per_year)
-top_five_reps_per_quarter.df <- dbGetQuery(mydbcon, top_five_reps_per_quarter)
 total_sold_per_year.df <- dbGetQuery(mydbcon, total_sold_per_year)
 total_sold_per_quarter.df <- dbGetQuery(mydbcon, total_sold_per_quarter)
 total_sold_per_month.df <- dbGetQuery(mydbcon, total_sold_per_month)
 ```
 
-```{r}
-print(top_five_reps_per_quarter.df)
-```
-
-```{r}
-library(scales)
-
-ggplot(top_five_reps_per_year.df, aes(x = year, y = total_sales, fill = paste(firstName, lastName))) +
-  geom_bar(stat = "identity", position = "dodge") +
-  labs(x = "Year", y = "Total Sales", title = "Top 5 Sales Reps - Total Sales per Year", fill = "Sales Rep") +
-  theme_minimal() +
-  scale_y_continuous(labels = comma) 
-```
-
-```{r}
-ggplot(top_five_reps_per_quarter.df, aes(x = quarter, y = total_sales, color = paste(firstName, lastName))) +
-  geom_line() +
-  geom_point() +
-  labs(x = "Quarter", y = "Total Sales", title = "Top Sales Reps - Total Sales per 2020 Quarter", color = "Sales Rep") +
-  theme_minimal()
-```
-
-```{r}
+### Visualization for Total Sales per Year
+This graph shows the total sales per year, in this case year 2020
+```{r = graphSalesPerYear}
 ggplot(total_sold_per_year.df, aes(x = year, y = total_sold_per_year)) +
   geom_line() +
   geom_point() +
@@ -95,7 +117,9 @@ ggplot(total_sold_per_year.df, aes(x = year, y = total_sold_per_year)) +
   theme_minimal()
 ```
 
-```{r}
+### Visualization for Total Sales per Quarter
+This graph shows the total sales per quarter 
+```{r = graphSalesPerQuarter}
 ggplot(total_sold_per_quarter.df, aes(x = quarter, y = total_sold_per_quarter)) +
   geom_line() +  # This adds the line connecting plot points
   geom_point() +
@@ -103,7 +127,9 @@ ggplot(total_sold_per_quarter.df, aes(x = quarter, y = total_sold_per_quarter)) 
   theme_minimal()
 ```
 
-```{r}
+### Visualization for Total Sales per Month 
+This graph shows the total sales per month for the avaliable year of 2020 
+```{r = graphSalesPerMonth}
 ggplot(total_sold_per_month.df, aes(x = month, y = total_sold_per_month)) +
   geom_line() +  # This adds the line connecting plot points
   geom_point() +
@@ -111,6 +137,8 @@ ggplot(total_sold_per_month.df, aes(x = month, y = total_sold_per_month)) +
   theme_minimal()
 ```
 
-```{r}
+
+### Database Disconnect 
+```{r = databaseDisconnect}
 dbDisconnect(mydbcon)
 ```

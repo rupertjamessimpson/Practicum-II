@@ -1,5 +1,5 @@
 # Title: Practicum II
-# Author: Rupert Simpson, Paula Bass Werner
+# Author: Rupert Simpson & Paula Bass Werner
 # Date: Summer Full 2023
 
 # Load required libraries
@@ -55,9 +55,10 @@ check.exists <- function(value, df, column_name) {
   }
 }
 
-# Parse Date Helper
+# Helper function to parse the date to the correct format
 parseDate <- function(date_to_parse) {
   
+  # Changes the date string received from the XML to the expected format 
   date_object <- strptime(date_to_parse, format = "%m/%d/%Y")
   date <- format(date_object, format = "%Y-%m-%d")
   return(date)
@@ -84,6 +85,7 @@ parse.reps <- function(file) {
     lastName <- xpathSApply(rep, "./lastName", xmlValue)
     territory <- xpathSApply(rep, "./territory", xmlValue)
     
+    # Append rep data to data frame with each iteration
     reps.df[row, "rID"] <- as.integer(rID)
     reps.df[row, "firstName"] <- firstName
     reps.df[row, "lastName"] <- lastName
@@ -92,12 +94,14 @@ parse.reps <- function(file) {
   return(reps.df)
 }
 
+# Iterate through the transaction XML data and save it to data frames
 for (file in 1:length(xmlFiles)) {
   # Assign current file
   currentFile <- xmlFiles[file]
   
   # Check for pharma reps file
   if (currentFile == "pharmaReps.xml") {
+    # Put reps XML through reps parsing function
     reps.df <- parse.reps(currentFile)
   } else {
     # Parse XML
@@ -109,9 +113,11 @@ for (file in 1:length(xmlFiles)) {
     # Find xml size
     n <- xmlSize(root)
     
+    # Iterate through nodes of the XML
     for (row in 1:n) {
       txn <- root[[row]]
       
+      # Assign values for each piece of data
       date <- parseDate(xpathSApply(txn, "./date", xmlValue))
       cust <- xpathSApply(txn, "./cust", xmlValue)
       prod <- xpathSApply(txn, "./prod", xmlValue)
@@ -120,18 +126,21 @@ for (file in 1:length(xmlFiles)) {
       country <- xpathSApply(txn, "./country", xmlValue)
       repID <- xpathSApply(txn, "./repID", xmlValue)
       
+      # Check if a product exists and if not, append it to the data frame
       if (check.exists(prod, products.df, "name") == 0) {
         products.df[p.row, "pID"] <- as.integer(p.row)
         products.df[p.row, "name"] <- prod
-        p.row <- p.row + 1 # Increment p.row when a new genre is added
+        p.row <- p.row + 1 # Increment p.row when a new product is added
       }
       
+      # Check if a product exists and if not, append it to the data frame
       if (check.exists(cust, customers.df, "name") == 0) {
         customers.df[c.row, "cID"] <- as.integer(c.row)
         customers.df[c.row, "name"] <- cust
-        c.row <- c.row + 1 # Increment c.row when a new genre is added
+        c.row <- c.row + 1 # Increment c.row when a new customer is added
       }
       
+      # Append to the saletxn data frame with the transaction data
       saletxn.df[t.row, "txnID"] <- as.integer(t.row)
       saletxn.df[t.row, "rID"] <- as.integer(repID)
       saletxn.df[t.row, "cID"] <- customers.df[customers.df$name == cust, "cID"]
@@ -140,11 +149,12 @@ for (file in 1:length(xmlFiles)) {
       saletxn.df[t.row, "amount"] <- as.double(amount)
       saletxn.df[t.row, "country"] <- country
       saletxn.df[t.row, "date"] <- date
-      t.row <- t.row + 1 # Increment t.row when a new genre is added
+      t.row <- t.row + 1 # Increment t.row when a new transaction is added
     }
   }
 }
 
+# Create tables in SQL database with required key constraints
 create_reps_table <- "
   CREATE TABLE IF NOT EXISTS reps (
       rID INT PRIMARY KEY,
@@ -185,9 +195,19 @@ dbExecute(dbcon, create_products_table)
 dbExecute(dbcon, create_customers_table)
 dbExecute(dbcon, create_saletxn_table)
 
+# Populate database tables with the data saved to the data frames
+# The functions below append to the pre-existing database tables, however
+# this can only be run once before it duplicates data.
+# dbWriteTable(dbcon, "reps", reps.df, overwrite = F, append = T)
+# dbWriteTable(dbcon, "products", products.df, overwrite = F, append = T)
+# dbWriteTable(dbcon, "customers", customers.df, overwrite = F, append = T)
+# dbWriteTable(dbcon, "saletxn", saletxn.df, overwrite = F, append = T)
+
+# Populate database using the overwrite flag to run the script multiple times
 dbWriteTable(dbcon, "reps", reps.df, overwrite = T)
 dbWriteTable(dbcon, "products", products.df, overwrite = T)
 dbWriteTable(dbcon, "customers", customers.df, overwrite = T)
 dbWriteTable(dbcon, "saletxn", saletxn.df, overwrite = T)
 
+#disconnect from database
 dbDisconnect(dbcon)
