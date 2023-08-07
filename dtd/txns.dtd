@@ -1,0 +1,13 @@
+<!DOCTYPE txns [
+  <!-- DTD grants -->
+  <!ELEMENT txns (txn*)>
+    <!ELEMENT txn (txnID, date, cust, prod, qty, amount, country, repID)>
+      <!ELEMENT txnID (#PCDATA)>
+      <!ELEMENT date (#PCDATA)>
+      <!ELEMENT cust (#PCDATA)>
+      <!ELEMENT prod (#PCDATA)>
+      <!ELEMENT qty (#PCDATA)>
+      <!ELEMENT amount (#PCDATA)>
+      <!ELEMENT country (#PCDATA)>
+      <!ELEMENT repID (#PCDATA)>
+]>

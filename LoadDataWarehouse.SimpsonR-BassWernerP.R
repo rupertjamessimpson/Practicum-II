@@ -25,6 +25,7 @@ prod_query <- "
     saletxn.pID,
     SUM(saletxn.amount) AS total_sold,
     (CAST(strftime('%m', saletxn.date) AS INTEGER) - 1) / 3 + 1 AS quarter,
+    strftime('%m', saletxn.date) AS month,
     strftime('%Y', saletxn.date) AS year,
     reps.territory AS region
   FROM
@@ -32,7 +33,7 @@ prod_query <- "
   JOIN
     reps ON saletxn.rID = reps.rID
   GROUP BY
-    saletxn.pID, quarter, year, region;
+    saletxn.pID, quarter, year, month, region;
 "
 
 rep_query <- "

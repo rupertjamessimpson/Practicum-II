@@ -25,18 +25,6 @@ mydbcon <- dbConnect(
 
 
 ```{r}
-total_sold_per_year <- "
-  SELECT year, SUM(total_sold) AS total_sold_per_year
-  FROM product_facts
-  GROUP BY year;
-"
-
-total_sold_per_quarter <- "
-  SELECT quarter, SUM(total_sold) AS total_sold_per_quarter
-  FROM product_facts
-  GROUP BY quarter;
-"
-
 top_five_reps_per_year <- "
   SELECT year, firstName, lastName, SUM(total_sold) AS total_sales
   FROM rep_facts
@@ -52,10 +40,29 @@ top_five_reps_per_quarter <- "
   ORDER BY quarter, total_sales DESC;
 "
 
+total_sold_per_year <- "
+  SELECT year, SUM(total_sold) AS total_sold_per_year
+  FROM product_facts
+  GROUP BY year;
+"
+
+total_sold_per_month <- "
+  SELECT month, SUM(total_sold) AS total_sold_per_month
+  FROM product_facts
+  GROUP BY month;
+"
+
+total_sold_per_quarter <- "
+  SELECT quarter, SUM(total_sold) AS total_sold_per_quarter
+  FROM product_facts
+  GROUP BY quarter;
+"
+
 top_five_reps_per_year.df <- dbGetQuery(mydbcon, top_five_reps_per_year)
+top_five_reps_per_quarter.df <- dbGetQuery(mydbcon, top_five_reps_per_quarter)
 total_sold_per_year.df <- dbGetQuery(mydbcon, total_sold_per_year)
 total_sold_per_quarter.df <- dbGetQuery(mydbcon, total_sold_per_quarter)
-top_five_reps_per_quarter.df <- dbGetQuery(mydbcon, top_five_reps_per_quarter)
+total_sold_per_month.df <- dbGetQuery(mydbcon, total_sold_per_month)
 ```
 
 ```{r}
@@ -63,18 +70,20 @@ print(top_five_reps_per_quarter.df)
 ```
 
 ```{r}
+library(scales)
+
+ggplot(top_five_reps_per_year.df, aes(x = year, y = total_sales, fill = paste(firstName, lastName))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Year", y = "Total Sales", title = "Top 5 Sales Reps - Total Sales per Year", fill = "Sales Rep") +
+  theme_minimal() +
+  scale_y_continuous(labels = comma) 
+```
+
+```{r}
 ggplot(top_five_reps_per_quarter.df, aes(x = quarter, y = total_sales, color = paste(firstName, lastName))) +
   geom_line() +
   geom_point() +
   labs(x = "Quarter", y = "Total Sales", title = "Top Sales Reps - Total Sales per 2020 Quarter", color = "Sales Rep") +
-  theme_minimal()
-```
-
-```{r}
-ggplot(top_five_reps_per_year.df, aes(x = year, y = total_sales, color = paste(firstName, lastName))) +
-  geom_line() +
-  geom_point() +
-  labs(x = "Year", y = "Total Sales", title = "Top 5 Sales Reps - Total Sales per Year", color = "Sales Rep") +
   theme_minimal()
 ```
 
@@ -88,9 +97,17 @@ ggplot(total_sold_per_year.df, aes(x = year, y = total_sold_per_year)) +
 
 ```{r}
 ggplot(total_sold_per_quarter.df, aes(x = quarter, y = total_sold_per_quarter)) +
-  geom_line() +
+  geom_line() +  # This adds the line connecting plot points
   geom_point() +
   labs(x = "Quarter", y = "Total Sold", title = "Total Sold per Quarter") +
+  theme_minimal()
+```
+
+```{r}
+ggplot(total_sold_per_month.df, aes(x = month, y = total_sold_per_month)) +
+  geom_line() +  # This adds the line connecting plot points
+  geom_point() +
+  labs(x = "Month", y = "Total Sold", title = "Total Sold per Month") +
   theme_minimal()
 ```
 
